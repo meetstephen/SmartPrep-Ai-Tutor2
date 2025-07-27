@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📘 SmartPrep AI – WAEC/UTME Tutor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-radio:checked + label { border-color: #4f46e5; background-color: #eef2ff; }
+        .custom-radio:disabled + label { cursor: not-allowed; background-color: #f3f4f6; border-color: #d1d5db; color: #9ca3af; }
+        .custom-radio:disabled:checked + label { background-color: #e5e7eb; border-color: #9ca3af; }
+        .correct-answer { border-color: #22c55e !important; background-color: #f0fdf4 !important; }
+        .wrong-answer { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #4f46e5; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex items-center justify-center min-h-screen">
+
+    <div id="app-container" class="w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
+        
+        <header class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600">📘 SmartPrep AI Tutor</h1>
+            <p class="text-gray-600 mt-2">Your AI-powered guide for WAEC/UTME success.</p>
+        </header>
+
+        <div id="loader" class="text-center py-10 hidden">
+            <div class="flex justify-center items-center space-x-2">
+                <div class="w-4 h-4 rounded-full bg-indigo-600 animate-bounce" style="animation-delay: -0.3s;"></div>
+                <div class="w-4 h-4 rounded-full bg-indigo-600 animate-bounce" style="animation-delay: -0.15s;"></div>
+                <div class="w-4 h-4 rounded-full bg-indigo-600 animate-bounce"></div>
+            </div>
+            <p id="loading-text" class="mt-4 text-gray-600">Preparing your first question...</p>
+        </div>
+
+        <div id="setup-screen" class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-semibold mb-4 text-center">Let's Get Started!</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="subject-select" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <select id="subject-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option>Mathematics</option>
+                        <option>Biology</option>
+                        <option>English Language</option>
+                        <option>Physics</option>
+                        <option>Chemistry</option>
+                        <option>Government</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="difficulty-select" class="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                    <select id="difficulty-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option>Easy</option>
+                        <option selected>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
+            </div>
+            <button id="start-quiz-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 mt-6">
+                Start Quiz
+            </button>
+        </div>
+
+        <div id="quiz-area" class="hidden">
+            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div id="quiz-content" class="bg-white p-6 rounded-xl shadow-md">
+                <div class="flex justify-between items-start">
+                    <p id="question-counter" class="text-sm font-medium text-indigo-600 mb-2"></p>
+                    <button id="hint-btn" class="text-sm text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">✨ Ask for a Hint</button>
+                </div>
+                <div id="hint-box" class="hidden my-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700"></div>
+                <h2 id="question-text" class="text-lg font-semibold mb-5 min-h-[56px]"></h2>
+                <div id="options-container" class="space-y-3"></div>
+                <button id="submit-btn" class="w-full mt-6 bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                    Submit Answer
+                </button>
+            </div>
+            
+            <div id="feedback-area" class="hidden mt-4 p-4 rounded-lg fade-in bg-white shadow-md">
+                <h3 class="font-bold text-lg mb-2">💡 Explanation</h3>
+                <p id="explanation-text" class="text-gray-700"></p>
+                <div id="ai-tools" class="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2">
+                    <button id="simplify-btn" class="flex-1 text-sm bg-gray-100 text-gray-700 font-semibold py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors">✨ Simplify Explanation</button>
+                    <button id="why-wrong-btn" class="flex-1 text-sm bg-gray-100 text-gray-700 font-semibold py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors hidden">✨ Why was my choice wrong?</button>
+                </div>
+                <div id="ai-feedback-box" class="hidden mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700"></div>
+                <button id="next-question-btn" class="w-full mt-4 bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700 transition-all duration-200">
+                    Next Question
+                </button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden text-center bg-white p-8 rounded-xl shadow-md fade-in">
+            <h2 class="text-2xl font-bold mb-2">🎉 Quiz Complete!</h2>
+            <p class="text-gray-600 mb-4">Here's how you did:</p>
+            <p id="final-score-text" class="text-4xl font-bold text-indigo-600 mb-6"></p>
+            <div id="study-plan-container" class="text-left">
+                <button id="study-plan-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 mb-4">
+                    ✨ Generate My Study Plan
+                </button>
+                <div id="study-plan-box" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800"></div>
+            </div>
+            <button id="restart-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 mt-6">
+                Take Another Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DOM Element References ---
+        const loader = document.getElementById('loader'), loadingText = document.getElementById('loading-text');
+        const setupScreen = document.getElementById('setup-screen'), quizArea = document.getElementById('quiz-area'), resultsScreen = document.getElementById('results-screen');
+        const startQuizBtn = document.getElementById('start-quiz-btn'), subjectSelect = document.getElementById('subject-select'), difficultySelect = document.getElementById('difficulty-select');
+        const questionCounter = document.getElementById('question-counter'), questionText = document.getElementById('question-text'), optionsContainer = document.getElementById('options-container');
+        const hintBtn = document.getElementById('hint-btn'), hintBox = document.getElementById('hint-box');
+        const submitBtn = document.getElementById('submit-btn');
+        const feedbackArea = document.getElementById('feedback-area'), explanationText = document.getElementById('explanation-text'), nextQuestionBtn = document.getElementById('next-question-btn');
+        const simplifyBtn = document.getElementById('simplify-btn'), whyWrongBtn = document.getElementById('why-wrong-btn'), aiFeedbackBox = document.getElementById('ai-feedback-box');
+        const finalScoreText = document.getElementById('final-score-text'), restartBtn = document.getElementById('restart-btn');
+        const studyPlanBtn = document.getElementById('study-plan-btn'), studyPlanBox = document.getElementById('study-plan-box');
+        const progressBar = document.getElementById('progress-bar');
+
+        // --- State Management ---
+        let questionsQueue = [], incorrectQuestions = [];
+        let currentQuestionIndex = 0, score = 0, userAnswer = null;
+        let isFetching = false, subject = 'Mathematics', difficulty = 'Medium';
+        const PRELOAD_COUNT = 3, QUIZ_LENGTH = 10;
+
+        // --- Secure API Configuration ---
+        // This is the endpoint for our secure Netlify function.
+        const SECURE_API_ENDPOINT = '/.netlify/functions/gemini-proxy';
+        const questionSchema = { type: "OBJECT", properties: { "question": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "answer": { "type": "STRING" }, "explanation": { "type": "STRING" } }, required: ["question", "options", "answer", "explanation"] };
+
+        /**
+         * Generic function to make a call to our secure backend function.
+         * @param {object} payload - The data to send to the Gemini API (prompt, schema, etc.).
+         * @param {HTMLElement} button - The button that triggered the call, to show a loading state.
+         * @returns {Promise<object|null>} The JSON response from the API or null on failure.
+         */
+        async function callSecureApi(payload, button = null) {
+            const originalText = button ? button.innerHTML : '';
+            if (button) button.innerHTML = '<div class="spinner mx-auto"></div>';
+            
+            try {
+                const response = await fetch(SECURE_API_ENDPOINT, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("API proxy error:", errorBody);
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("Failed to call secure API:", error);
+                // Display a more user-friendly error on the button if possible
+                if (button) button.textContent = "Error!";
+                return null;
+            } finally {
+                if (button) button.innerHTML = originalText;
+            }
+        }
+        
+        async function generateQuestion() {
+            const prompt = `Create one multiple-choice WAEC/UTME question for the subject "${subject}" at a "${difficulty}" difficulty level.`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: questionSchema } };
+            const result = await callSecureApi(payload);
+            if (result && result.candidates) {
+                return JSON.parse(result.candidates[0].content.parts[0].text);
+            }
+            return null;
+        }
+
+        async function generateText(prompt, button = null) {
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const result = await callSecureApi(payload, button);
+            if (result && result.candidates) {
+                return result.candidates[0].content.parts[0].text;
+            }
+            return "Sorry, I couldn't generate a response right now.";
+        }
+
+        // --- The rest of the application logic remains the same ---
+
+        async function preloadQuestions() {
+            if (isFetching) return;
+            isFetching = true;
+            const promises = Array.from({ length: PRELOAD_COUNT }, () => generateQuestion());
+            const newQuestions = await Promise.all(promises);
+            questionsQueue.push(...newQuestions.filter(q => q !== null));
+            isFetching = false;
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= questionsQueue.length) {
+                loadingText.textContent = "Fetching more questions...";
+                loader.classList.remove('hidden');
+                preloadQuestions().then(() => {
+                    loader.classList.add('hidden');
+                    if (currentQuestionIndex < questionsQueue.length) displayQuestion();
+                    else showFinalResults();
+                });
+                return;
+            }
+            const q = questionsQueue[currentQuestionIndex];
+            quizArea.classList.remove('hidden');
+            quizArea.classList.add('fade-in');
+            questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${QUIZ_LENGTH}`;
+            questionText.textContent = q.question;
+            optionsContainer.innerHTML = '';
+            q.options.forEach((option, index) => {
+                const optionId = `option-${index}`;
+                optionsContainer.innerHTML += `<div><input type="radio" name="answer" id="${optionId}" value="${option}" class="hidden custom-radio"><label for="${optionId}" class="block w-full p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition-colors duration-200"><span class="font-bold mr-2">${String.fromCharCode(65 + index)}.</span> ${option}</label></div>`;
+            });
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('hidden');
+            feedbackArea.classList.add('hidden');
+            aiFeedbackBox.classList.add('hidden');
+            hintBox.classList.add('hidden');
+            hintBtn.disabled = false;
+            progressBar.style.width = `${((currentQuestionIndex) / QUIZ_LENGTH) * 100}%`;
+        }
+
+        function handleSubmit() {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (!selectedOption) {
+                submitBtn.textContent = "Please select an answer!";
+                submitBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                setTimeout(() => { submitBtn.textContent = "Submit Answer"; submitBtn.classList.remove('bg-red-500', 'hover:bg-red-600'); }, 1500);
+                return;
+            }
+            submitBtn.disabled = true;
+            hintBtn.disabled = true;
+            const q = questionsQueue[currentQuestionIndex];
+            userAnswer = selectedOption.value;
+            const isCorrect = userAnswer === q.answer;
+            document.querySelectorAll('input[name="answer"]').forEach(radio => radio.disabled = true);
+            document.querySelectorAll('input[name="answer"] + label').forEach(label => {
+                const radio = document.getElementById(label.getAttribute('for'));
+                if (radio.value === q.answer) label.classList.add('correct-answer');
+                else if (radio.checked) label.classList.add('wrong-answer');
+            });
+            if (isCorrect) {
+                score++;
+                whyWrongBtn.classList.add('hidden');
+            } else {
+                incorrectQuestions.push(q);
+                whyWrongBtn.classList.remove('hidden');
+            }
+            explanationText.textContent = q.explanation;
+            feedbackArea.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
+        }
+
+        function handleNextQuestion() {
+            currentQuestionIndex++;
+            userAnswer = null;
+            if (currentQuestionIndex >= QUIZ_LENGTH) { showFinalResults(); return; }
+            displayQuestion();
+            if (questionsQueue.length - currentQuestionIndex < PRELOAD_COUNT) { preloadQuestions(); }
+        }
+
+        function showFinalResults() {
+            quizArea.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            finalScoreText.textContent = `${score} / ${QUIZ_LENGTH}`;
+            progressBar.style.width = '100%';
+            studyPlanBox.classList.add('hidden');
+            studyPlanBtn.classList.remove('hidden');
+        }
+        
+        function restartQuiz() {
+            resultsScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+            questionsQueue = [];
+            incorrectQuestions = [];
+            currentQuestionIndex = 0;
+            score = 0;
+            progressBar.style.width = '0%';
+        }
+
+        async function initializeApp() {
+            setupScreen.classList.add('hidden');
+            loader.classList.remove('hidden');
+            loadingText.textContent = `Fetching ${subject} questions...`;
+            await preloadQuestions();
+            loader.classList.add('hidden');
+            if(questionsQueue.length > 0) displayQuestion();
+            else {
+                loadingText.textContent = "Could not load questions. Please try again.";
+                loader.classList.remove('hidden');
+                setTimeout(() => { loader.classList.add('hidden'); setupScreen.classList.remove('hidden'); }, 3000);
+            }
+        }
+        
+        hintBtn.addEventListener('click', async () => {
+            hintBtn.disabled = true;
+            const q = questionsQueue[currentQuestionIndex];
+            const prompt = `Provide a short, one-sentence hint for the following multiple-choice question. Do not reveal the answer. Question: "${q.question}"`;
+            hintBox.innerHTML = '<div class="spinner"></div>';
+            hintBox.classList.remove('hidden');
+            const hint = await generateText(prompt);
+            hintBox.innerHTML = hint;
+        });
+
+        simplifyBtn.addEventListener('click', async (e) => {
+            const q = questionsQueue[currentQuestionIndex];
+            const prompt = `Simplify this explanation for a high school student preparing for an exam. Make it clear and concise. Explanation: "${q.explanation}"`;
+            aiFeedbackBox.innerHTML = '<div class="spinner mx-auto my-2"></div>';
+            aiFeedbackBox.classList.remove('hidden');
+            const simplified = await generateText(prompt, e.target);
+            aiFeedbackBox.innerHTML = simplified.replace(/\n/g, '<br>');
+        });
+
+        whyWrongBtn.addEventListener('click', async (e) => {
+            if (!userAnswer) return;
+            const q = questionsQueue[currentQuestionIndex];
+            const prompt = `For the question: "${q.question}", a student incorrectly chose "${userAnswer}". The correct answer is "${q.answer}". Explain clearly and concisely why the student's choice was wrong and why the correct answer is right.`;
+            aiFeedbackBox.innerHTML = '<div class="spinner mx-auto my-2"></div>';
+            aiFeedbackBox.classList.remove('hidden');
+            const analysis = await generateText(prompt, e.target);
+            aiFeedbackBox.innerHTML = analysis.replace(/\n/g, '<br>');
+        });
+
+        studyPlanBtn.addEventListener('click', async (e) => {
+            if (incorrectQuestions.length === 0) {
+                studyPlanBox.innerHTML = "You got a perfect score! Keep up the great work. Try a harder difficulty or a new subject to challenge yourself.";
+            } else {
+                const topics = incorrectQuestions.map(q => `Question: ${q.question}\nExplanation: ${q.explanation}`).join('\n\n');
+                const prompt = `A student took a ${QUIZ_LENGTH}-question quiz in ${subject} and scored ${score}/${QUIZ_LENGTH}. They struggled with the following concepts:\n\n${topics}\n\nBased on this, create a concise, actionable study plan with 3-4 bullet points to help them improve. Address the weak areas directly.`;
+                studyPlanBox.innerHTML = '<div class="spinner mx-auto my-2"></div>';
+                const plan = await generateText(prompt, e.target);
+                studyPlanBox.innerHTML = plan.replace(/\n/g, '<br>');
+            }
+            studyPlanBox.classList.remove('hidden');
+            studyPlanBtn.classList.add('hidden');
+        });
+
+        startQuizBtn.addEventListener('click', () => { subject = subjectSelect.value; difficulty = difficultySelect.value; initializeApp(); });
+        submitBtn.addEventListener('click', handleSubmit);
+        nextQuestionBtn.addEventListener('click', handleNextQuestion);
+        restartBtn.addEventListener('click', restartQuiz);
+    </script>
+</body>
+</html>
